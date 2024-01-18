@@ -5,10 +5,18 @@ const { requireUser } = require('./utils');
 
 const { 
   createPost,
+  deletePost,
   getAllPosts,
   updatePost,
   getPostById,
+  
 } = require('../db');
+
+//get posts works!!
+//post to posts works!
+//patch to posts works!
+
+
 
 postsRouter.get('/', async (req, res, next) => {
   try {
@@ -32,6 +40,25 @@ postsRouter.get('/', async (req, res, next) => {
     res.send({
       posts
     });
+  } catch ({ name, message }) {
+    next({ name, message });
+  }
+});
+
+postsRouter.get('/:postId', async (req, res, next) => {
+  try {
+    console.log("pickles");
+    const postId=req.params.postId;
+    const result=await getPostById(postId);
+      // none of the above are true
+      // return false;
+  //  res.send({
+  //     posts
+  //   });
+  console.log(result);
+  res.send({
+    result
+  });
   } catch ({ name, message }) {
     next({ name, message });
   }
@@ -64,7 +91,7 @@ postsRouter.post('/', requireUser, async (req, res, next) => {
 
 postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
   const { postId } = req.params;
-  const { title, content, tags } = req.body;
+  const { title, content, tags, active } = req.body;
 
   const updateFields = {};
 
@@ -80,6 +107,9 @@ postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
     updateFields.content = content;
   }
 
+  if (active===true || active===false) {
+    updateFields.active = active;
+  }
   try {
     const originalPost = await getPostById(postId);
 
@@ -98,7 +128,13 @@ postsRouter.patch('/:postId', requireUser, async (req, res, next) => {
 });
 
 postsRouter.delete('/:postId', requireUser, async (req, res, next) => {
-  res.send({ message: 'under construction' });
+  try {
+    const deletedPost = await deletePost(req.params.postId);
+    res.send(deletedPost);
+  } catch (error) {
+    next({name:"PostDeletionError", message:"Error deleting post!"});
+    
+  }
 });
 
 module.exports = postsRouter;

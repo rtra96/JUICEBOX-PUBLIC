@@ -17,8 +17,8 @@ async function createUser({
 }) {
   try {
     const { rows: [ user ] } = await client.query(`
-      INSERT INTO users(username, password, name) 
-      VALUES($1, $2, $3) 
+      INSERT INTO users(username, password, name, location) 
+      VALUES($1, $2, $3, $4) 
       ON CONFLICT (username) DO NOTHING 
       RETURNING *;
     `, [username, password, name, location]);
@@ -99,10 +99,11 @@ async function getUserByUsername(username) {
     `, [ username ]);
 
     if (!user) {
-      throw {
-        name: "UserNotFoundError",
-        message: "A user with that username does not exist"
-      }
+      // throw {
+      //   name: "UserNotFoundError",
+      //   message: "A user with that username does not exist"
+      // }
+    return null;
     }
 
     return user;
@@ -136,6 +137,21 @@ async function createPost({
   }
 }
 
+async function deletePost(postId){
+  try {
+    await client.query(`DELETE FROM post_tags WHERE "postId"=$1;`, [postId]); 
+    const {rows:[post]}= await client.query(
+      `
+      DELETE FROM posts WHERE id=$1 RETURNING *`,
+      [postId]
+    );   
+    
+    return post;
+  } catch (error) {
+    throw(error);
+    
+  }
+}
 async function updatePost(postId, fields = {}) {
   // read off the tags & remove that field 
   const { tags } = fields; // might be undefined
@@ -283,7 +299,7 @@ async function getPostsByTagName(tagName) {
 
 async function createTags(tagList) {
   if (tagList.length === 0) {
-    return;
+      return tagList;
   }
 
   const valuesStringInsert = tagList.map(
@@ -329,8 +345,7 @@ async function createPostTag(postId, tagId) {
 
 async function addTagsToPost(postId, tagList) {
   try {
-    const createPostTagPromises = tagList.map(
-      tag => createPostTag(postId, tag.id)
+    const createPostTagPromises = tagList.map((tag) => createPostTag(postId, tag.id)
     );
 
     await Promise.all(createPostTagPromises);
@@ -357,6 +372,7 @@ async function getAllTags() {
 module.exports = {  
   client,
   createUser,
+  deletePost,
   updateUser,
   getAllUsers,
   getUserById,
@@ -370,5 +386,6 @@ module.exports = {
   createTags,
   getAllTags,
   createPostTag,
-  addTagsToPost
+  addTagsToPost,
+  
 }
